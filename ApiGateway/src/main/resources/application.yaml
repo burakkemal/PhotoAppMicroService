@@ -1,0 +1,68 @@
+server:
+  port: 8082
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: false
+          lower-case-service-id: true
+      routes:
+      - id: users-status-check
+        uri: lb://users-ws
+        predicates:
+        - Path=/users-ws/users/status/check
+        - Method=GET
+        - Header=Authorization, Bearer (.*)
+        filters:
+        - RemoveRequestHeader= Cookie
+        - RewritePath=/users-ws/(?<segment>.*), /$\{segment}
+        - AuthorizationHeaderFilter
+        
+      - id: users-ws-login
+        uri: lb://users-ws
+        predicates:
+        - Path=/users-ws/users/login
+        - Method=POST
+        filters:
+        - RemoveRequestHeader= Cookie
+        - RewritePath=/users-ws/(?<segment>.*), /$\{segment}
+        
+      - id: users-ws
+        uri: lb://users-ws
+        predicates:
+        - Path=/users-ws/users
+        - Method=POST
+        filters:
+        - RemoveRequestHeader= Cookie
+        - RewritePath=/users-ws/(?<segment>.*), /$\{segment}
+      
+      - id: users-ws-get-update-delete
+        uri: lb://users-ws
+        predicates:
+        - Path=/users-ws/users/*
+        - Method=GET,PUT,DELETE
+        - Header=Authorization, Bearer (.*)
+        filters:
+        - RemoveRequestHeader= Cookie
+        - RewritePath=/users-ws/(?<segment>.*), /$\{segment}
+        - AuthorizationHeaderFilter
+      
+      - id: account-ws-all
+        uri: lb://account-ws
+        predicates:
+        - Path=/account-ws/accounttypes/*
+        - Method=GET,POST,PUT,DELETE
+        filters:
+        - RemoveRequestHeader= Cookie
+        - RewritePath=/account-ws/(?<segment>.*), /$\{segment}
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    hostname: localhost
+token:
+  secret: mysupersecreykeymysupersecreykeymysupersecreykeymysupersecreykey
